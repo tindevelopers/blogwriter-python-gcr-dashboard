@@ -1,5 +1,8 @@
 @import 'tailwindcss';
 
+/* Tell Tailwind to scan the UI package for class names */
+@source "../../../packages/ui/src";
+
 @theme {
   --font-sans: Inter, sans-serif;
   --font-sans--font-feature-settings: 'cv11';
