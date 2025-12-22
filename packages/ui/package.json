@@ -1,0 +1,53 @@
+{
+  "name": "@repo/ui",
+  "version": "0.1.0",
+  "private": true,
+  "exports": {
+    "./alert": "./src/alert.tsx",
+    "./auth-layout": "./src/auth-layout.tsx",
+    "./avatar": "./src/avatar.tsx",
+    "./badge": "./src/badge.tsx",
+    "./button": "./src/button.tsx",
+    "./checkbox": "./src/checkbox.tsx",
+    "./combobox": "./src/combobox.tsx",
+    "./description-list": "./src/description-list.tsx",
+    "./dialog": "./src/dialog.tsx",
+    "./divider": "./src/divider.tsx",
+    "./dropdown": "./src/dropdown.tsx",
+    "./fieldset": "./src/fieldset.tsx",
+    "./heading": "./src/heading.tsx",
+    "./input": "./src/input.tsx",
+    "./link": "./src/link.tsx",
+    "./listbox": "./src/listbox.tsx",
+    "./navbar": "./src/navbar.tsx",
+    "./pagination": "./src/pagination.tsx",
+    "./radio": "./src/radio.tsx",
+    "./select": "./src/select.tsx",
+    "./sidebar-layout": "./src/sidebar-layout.tsx",
+    "./sidebar": "./src/sidebar.tsx",
+    "./stacked-layout": "./src/stacked-layout.tsx",
+    "./switch": "./src/switch.tsx",
+    "./table": "./src/table.tsx",
+    "./text": "./src/text.tsx",
+    "./textarea": "./src/textarea.tsx"
+  },
+  "scripts": {
+    "lint": "eslint . --max-warnings 0",
+    "type-check": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "@headlessui/react": "^2.2.9",
+    "@heroicons/react": "^2.2.0",
+    "clsx": "^2.1.1",
+    "motion": "^12.23.26",
+    "react": "^19",
+    "react-dom": "^19"
+  },
+  "devDependencies": {
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "typescript": "^5"
+  }
+}
+

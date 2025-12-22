@@ -1,36 +1,103 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# BlogWriter Monorepo
+
+A Turborepo-powered monorepo for the BlogWriter Python GCR Dashboard and shared UI components.
+
+## What's inside?
+
+This monorepo uses [Turborepo](https://turbo.build/repo) and contains the following packages/apps:
+
+### Apps
+
+- `dashboard`: Next.js 16 dashboard application for managing LLM providers and monitoring blog generation
+
+### Packages
+
+- `@repo/ui`: Shared Catalyst UI component library used across applications
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 18+ and npm
+- Firebase account (for backend services)
+- LLM API keys (OpenAI, Anthropic, etc.)
+
+### Installation
 
 ```bash
+# Install dependencies
+npm install
+
+# Start development
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+This will start all apps in development mode.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Build
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+# Build all apps and packages
+npm run build
+```
+
+### Development Workflow
+
+```bash
+# Run all apps in dev mode
+npm run dev
+
+# Lint all code
+npm run lint
+
+# Type-check all code
+npm run type-check
+
+# Format all code
+npm run format
+
+# Clean all build artifacts and node_modules
+npm run clean
+```
+
+## Project Structure
+
+```
+blogwriter-monorepo/
+├── apps/
+│   └── dashboard/          # Main dashboard app
+├── packages/
+│   └── ui/                 # Shared UI components
+├── turbo.json             # Turborepo configuration
+├── package.json           # Root package.json
+└── tsconfig.base.json     # Base TypeScript config
+```
+
+## Adding New Apps or Packages
+
+1. Create a new folder in `apps/` or `packages/`
+2. Add a `package.json` with a name following the pattern:
+   - Apps: `@repo/app-name`
+   - Packages: `@repo/package-name`
+3. Add the app/package to the workspace in root `package.json`
+4. Add TypeScript project reference in root `tsconfig.json`
+
+## Using Shared Components
+
+In any app, import shared UI components like this:
+
+```tsx
+import { Button } from '@repo/ui/button'
+import { Table } from '@repo/ui/table'
+```
+
+## Deployment
+
+See individual app READMEs for deployment instructions:
+- [Dashboard Deployment](./apps/dashboard/README.md)
 
 ## Learn More
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- [Turborepo Documentation](https://turbo.build/repo/docs)
+- [Next.js Documentation](https://nextjs.org/docs)
+- [Catalyst UI Kit](https://catalyst.tailwindui.com/)
