@@ -1,0 +1,8 @@
+{
+  "buildCommand": "cd ../.. && turbo run build --filter=@repo/dashboard",
+  "devCommand": "cd ../.. && turbo run dev --filter=@repo/dashboard",
+  "installCommand": "npm install",
+  "framework": "nextjs",
+  "outputDirectory": ".next"
+}
+
