@@ -60,14 +60,16 @@ const mockHealth = [
   },
 ]
 
-function formatCurrency(value: number): string {
+function formatCurrency(value: number | undefined | null): string {
+  if (value === undefined || value === null || isNaN(value)) return '$0.00'
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
   }).format(value)
 }
 
-function formatNumber(value: number): string {
+function formatNumber(value: number | undefined | null): string {
+  if (value === undefined || value === null || isNaN(value)) return '0'
   return new Intl.NumberFormat('en-US').format(value)
 }
 
