@@ -9,38 +9,35 @@ import { useProviders, useProviderHealth } from '@/lib/api/hooks'
 import { CheckCircleIcon, XCircleIcon } from '@heroicons/react/20/solid'
 
 // Mock data for demo mode
-const mockProviders = {
-  providers: [
-    {
-      provider_type: 'openai',
-      enabled: true,
-      default_model: 'gpt-4-turbo-preview',
-      priority: 1,
-      total_requests: 1248,
-      total_cost: 45.67,
-      last_used: new Date().toISOString(),
-    },
-    {
-      provider_type: 'anthropic',
-      enabled: true,
-      default_model: 'claude-3-5-sonnet-20241022',
-      priority: 2,
-      total_requests: 892,
-      total_cost: 32.45,
-      last_used: new Date(Date.now() - 3600000).toISOString(),
-    },
-    {
-      provider_type: 'google',
-      enabled: false,
-      default_model: 'gemini-pro',
-      priority: 3,
-      total_requests: 0,
-      total_cost: 0,
-      last_used: null,
-    },
-  ],
-  active_provider: 'openai',
-}
+const mockProviders = [
+  {
+    provider_type: 'openai',
+    enabled: true,
+    default_model: 'gpt-4-turbo-preview',
+    priority: 1,
+    total_requests: 1248,
+    total_cost: 45.67,
+    last_used: new Date().toISOString(),
+  },
+  {
+    provider_type: 'anthropic',
+    enabled: true,
+    default_model: 'claude-3-5-sonnet-20241022',
+    priority: 2,
+    total_requests: 892,
+    total_cost: 32.45,
+    last_used: new Date(Date.now() - 3600000).toISOString(),
+  },
+  {
+    provider_type: 'google',
+    enabled: false,
+    default_model: 'gemini-pro',
+    priority: 3,
+    total_requests: 0,
+    total_cost: 0,
+    last_used: null,
+  },
+]
 
 const mockHealth = [
   {
@@ -103,13 +100,19 @@ function getProviderColor(provider: string): string {
 }
 
 export default function ProvidersPage() {
-  const { data: providers, error: providersError } = useProviders()
-  const { data: health, error: healthError } = useProviderHealth()
+  const { data: providersData, error: providersError } = useProviders()
+  const { data: healthData, error: healthError } = useProviderHealth()
 
-  // Use mock data if API is not available
-  const displayProviders = providersError ? mockProviders : providers || mockProviders
-  const displayHealth = healthError ? mockHealth : health || mockHealth
-  const isDemo = !!providersError || !providers
+  // Extract providers array safely
+  const displayProviders = Array.isArray(providersData?.providers)
+    ? providersData.providers
+    : Array.isArray(providersData)
+      ? providersData
+      : mockProviders
+
+  const displayHealth = Array.isArray(healthData) ? healthData : mockHealth
+  const activeProvider = providersData?.active_provider || 'openai'
+  const isDemo = !providersData || !!providersError
 
   return (
     <>
@@ -139,14 +142,11 @@ export default function ProvidersPage() {
           </TableRow>
         </TableHead>
         <TableBody>
-          {displayProviders.providers.map((provider: any) => {
-            const isActive = provider.provider_type === displayProviders.active_provider
+          {displayProviders.map((provider: any) => {
+            const isActive = provider.provider_type === activeProvider
 
             return (
-              <TableRow
-                key={provider.provider_type}
-                href={`/providers/${provider.provider_type}`}
-              >
+              <TableRow key={provider.provider_type} href={`/providers/${provider.provider_type}`}>
                 <TableCell>
                   <div className="flex items-center gap-3">
                     <Avatar
@@ -189,7 +189,7 @@ export default function ProvidersPage() {
 
       <Subheading className="mt-14">Health Status</Subheading>
       <div className="mt-4 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {(displayHealth as any[]).map((h) => (
+        {displayHealth.map((h: any) => (
           <div
             key={h.provider_type}
             className="rounded-xl border border-zinc-950/10 bg-white p-6 dark:border-white/10 dark:bg-zinc-900"

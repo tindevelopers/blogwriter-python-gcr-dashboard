@@ -6,7 +6,7 @@ import { Badge } from '@repo/ui/badge'
 import { Heading, Subheading } from '@repo/ui/heading'
 import { Select } from '@repo/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@repo/ui/table'
-import { useHealth, useProviderStats, useCosts } from '@/lib/api/hooks'
+import { useProviderStats, useCosts } from '@/lib/api/hooks'
 
 // Mock data for demo mode
 const mockProviderStats = [
@@ -96,22 +96,20 @@ function formatNumber(value: number): string {
 }
 
 export default function DashboardPage() {
-  const { data: health, error: healthError } = useHealth()
-  const { data: providerStats, error: statsError } = useProviderStats()
+  const { data: providerStats, error: statsError, isLoading } = useProviderStats()
   const { data: costs } = useCosts()
 
-  // Use mock data if API is not available
-  const displayProviderStats = statsError ? mockProviderStats : providerStats || mockProviderStats
-  const isDemo = !!statsError || !providerStats
+  // Always use mock data for now until API is connected
+  const displayProviderStats = Array.isArray(providerStats) ? providerStats : mockProviderStats
+  const isDemo = !providerStats || !!statsError
 
   // Calculate metrics
-  const totalRequests = Array.isArray(displayProviderStats)
-    ? displayProviderStats.reduce((sum: number, p: any) => sum + (p.total_requests || 0), 0)
-    : 2140
+  const totalRequests = displayProviderStats.reduce(
+    (sum: number, p: any) => sum + (p.total_requests || 0),
+    0
+  )
   const totalCost = costs?.total_cost || 78.12
-  const activeProviders = Array.isArray(displayProviderStats)
-    ? displayProviderStats.filter((p: any) => p.enabled).length
-    : 2
+  const activeProviders = displayProviderStats.filter((p: any) => p.enabled).length
   const avgLatency = 278
 
   return (
@@ -157,7 +155,7 @@ export default function DashboardPage() {
           </TableRow>
         </TableHead>
         <TableBody>
-          {(displayProviderStats as any[]).map((provider) => (
+          {displayProviderStats.map((provider: any) => (
             <TableRow key={provider.provider_type} href={`/providers/${provider.provider_type}`}>
               <TableCell>
                 <div className="flex items-center gap-3">
