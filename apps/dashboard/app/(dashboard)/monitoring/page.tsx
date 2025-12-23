@@ -31,7 +31,6 @@ import {
   XMarkIcon,
 } from '@heroicons/react/20/solid'
 
-
 function formatRelativeTime(dateString: string | null): string {
   if (!dateString) return 'Never'
   const date = new Date(dateString)
@@ -100,8 +99,16 @@ export default function MonitoringPage() {
   const [autoRefresh, setAutoRefresh] = useState<boolean>(true)
 
   // Extract real data from API responses
-  const displayJobs = Array.isArray(jobsData?.jobs) ? jobsData.jobs : Array.isArray(jobsData) ? jobsData : []
-  const displayLogs = Array.isArray(logsData?.logs) ? logsData.logs : Array.isArray(logsData) ? logsData : []
+  const displayJobs = Array.isArray(jobsData?.jobs)
+    ? jobsData.jobs
+    : Array.isArray(jobsData)
+      ? jobsData
+      : []
+  const displayLogs = Array.isArray(logsData?.logs)
+    ? logsData.logs
+    : Array.isArray(logsData)
+      ? logsData
+      : []
   const displayStatus = statusData || {}
   const displayCacheStats = cacheStatsData || {}
 
@@ -150,9 +157,15 @@ export default function MonitoringPage() {
             )}
           </div>
           <div className="mt-2">
-            <Badge color={displayStatus.api_health === 'healthy' ? 'lime' : 'red'}>
-              {displayStatus.api_health || 'Unknown'}
-            </Badge>
+            {statusError ? (
+              <Badge color="red">Error</Badge>
+            ) : displayStatus.api_health ? (
+              <Badge color={displayStatus.api_health === 'healthy' ? 'lime' : 'red'}>
+                {displayStatus.api_health}
+              </Badge>
+            ) : (
+              <Badge color="zinc">Loading...</Badge>
+            )}
           </div>
         </div>
 
@@ -161,22 +174,34 @@ export default function MonitoringPage() {
             <span className="text-sm text-zinc-500">Active Jobs</span>
             <ClockIcon className="h-6 w-6 text-blue-500" />
           </div>
-          <div className="mt-2 text-2xl font-semibold">{displayStatus.active_jobs || 0}</div>
+          <div className="mt-2 text-2xl font-semibold">
+            {statusError ? '—' : displayStatus.active_jobs ?? (isLoadingJobs ? '...' : 0)}
+          </div>
         </div>
 
         <div className="rounded-xl border border-zinc-950/10 bg-white p-6 dark:border-white/10 dark:bg-zinc-900">
           <div className="flex items-center justify-between">
             <span className="text-sm text-zinc-500">Cache Status</span>
-            {displayStatus.cache_status === 'operational' ? (
-              <CheckCircleIcon className="h-6 w-6 text-green-500" />
-            ) : (
+            {statusError ? (
               <XCircleIcon className="h-6 w-6 text-red-500" />
+            ) : displayStatus.cache_status === 'operational' ? (
+              <CheckCircleIcon className="h-6 w-6 text-green-500" />
+            ) : displayStatus.cache_status ? (
+              <XCircleIcon className="h-6 w-6 text-red-500" />
+            ) : (
+              <ClockIcon className="h-6 w-6 text-zinc-400" />
             )}
           </div>
           <div className="mt-2">
-            <Badge color={displayStatus.cache_status === 'operational' ? 'lime' : 'red'}>
-              {displayStatus.cache_status || 'Unknown'}
-            </Badge>
+            {statusError ? (
+              <Badge color="red">Error</Badge>
+            ) : displayStatus.cache_status ? (
+              <Badge color={displayStatus.cache_status === 'operational' ? 'lime' : 'red'}>
+                {displayStatus.cache_status}
+              </Badge>
+            ) : (
+              <Badge color="zinc">Loading...</Badge>
+            )}
           </div>
         </div>
 
@@ -186,7 +211,11 @@ export default function MonitoringPage() {
             <ClockIcon className="h-6 w-6 text-zinc-500" />
           </div>
           <div className="mt-2 text-lg font-semibold">
-            {displayStatus.uptime_seconds ? formatUptime(displayStatus.uptime_seconds) : '—'}
+            {statusError
+              ? '—'
+              : displayStatus.uptime_seconds
+                ? formatUptime(displayStatus.uptime_seconds)
+                : '—'}
           </div>
         </div>
       </div>
@@ -289,7 +318,7 @@ export default function MonitoringPage() {
         </div>
       </div>
 
-      <div className="mt-4 rounded-lg border border-zinc-950/10 bg-zinc-950 p-4 dark:border-white/10 dark:bg-zinc-900">
+        <div className="mt-4 rounded-lg border border-zinc-950/10 bg-zinc-950 p-4 dark:border-white/10 dark:bg-zinc-900">
         <div className="max-h-96 overflow-y-auto font-mono text-sm">
           {isLoadingLogs ? (
             <div className="text-zinc-500">Loading logs...</div>
@@ -314,25 +343,41 @@ export default function MonitoringPage() {
       {/* Cache Statistics Section */}
       <Subheading className="mt-14">Cache Statistics</Subheading>
       <div className="mt-4">
-        <DescriptionList>
-          <DescriptionTerm>Cache Hits</DescriptionTerm>
-          <DescriptionDetails>{displayCacheStats.hits?.toLocaleString() || '0'}</DescriptionDetails>
-          <DescriptionTerm>Cache Misses</DescriptionTerm>
-          <DescriptionDetails>{displayCacheStats.misses?.toLocaleString() || '0'}</DescriptionDetails>
-          <DescriptionTerm>Hit Rate</DescriptionTerm>
-          <DescriptionDetails>
-            {displayCacheStats.hit_rate ? `${displayCacheStats.hit_rate.toFixed(1)}%` : '—'}
-          </DescriptionDetails>
-          <DescriptionTerm>Cache Size</DescriptionTerm>
-          <DescriptionDetails>
-            {displayCacheStats.size_mb ? `${displayCacheStats.size_mb.toFixed(1)} MB` : '—'}
-          </DescriptionDetails>
-        </DescriptionList>
-        <div className="mt-6">
-          <Button onClick={handleClearCache} disabled={clearCacheMutation.isPending}>
-            {clearCacheMutation.isPending ? 'Clearing...' : 'Clear Cache'}
-          </Button>
-        </div>
+        {cacheStatsError ? (
+          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-900/20 dark:text-red-200">
+            Error loading cache statistics: {cacheStatsError.message || 'Unknown error'}
+          </div>
+        ) : (
+          <>
+            <DescriptionList>
+              <DescriptionTerm>Cache Hits</DescriptionTerm>
+              <DescriptionDetails>
+                {displayCacheStats.hits !== undefined ? displayCacheStats.hits.toLocaleString() : '—'}
+              </DescriptionDetails>
+              <DescriptionTerm>Cache Misses</DescriptionTerm>
+              <DescriptionDetails>
+                {displayCacheStats.misses !== undefined ? displayCacheStats.misses.toLocaleString() : '—'}
+              </DescriptionDetails>
+              <DescriptionTerm>Hit Rate</DescriptionTerm>
+              <DescriptionDetails>
+                {displayCacheStats.hit_rate !== undefined
+                  ? `${displayCacheStats.hit_rate.toFixed(1)}%`
+                  : '—'}
+              </DescriptionDetails>
+              <DescriptionTerm>Cache Size</DescriptionTerm>
+              <DescriptionDetails>
+                {displayCacheStats.size_mb !== undefined
+                  ? `${displayCacheStats.size_mb.toFixed(1)} MB`
+                  : '—'}
+              </DescriptionDetails>
+            </DescriptionList>
+            <div className="mt-6">
+              <Button onClick={handleClearCache} disabled={clearCacheMutation.isPending}>
+                {clearCacheMutation.isPending ? 'Clearing...' : 'Clear Cache'}
+              </Button>
+            </div>
+          </>
+        )}
       </div>
     </>
   )

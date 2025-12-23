@@ -29,7 +29,6 @@ import {
 } from '@/lib/api/hooks'
 import { TrashIcon, PencilIcon, PlusIcon } from '@heroicons/react/20/solid'
 
-
 function formatRelativeTime(dateString: string | null): string {
   if (!dateString) return 'Never'
   const date = new Date(dateString)
@@ -195,12 +194,6 @@ export default function ConfigurationPage() {
             <TableRow>
               <TableCell colSpan={4} className="text-center text-zinc-500">
                 Loading secrets...
-              </TableCell>
-            </TableRow>
-          ) : secretsError ? (
-            <TableRow>
-              <TableCell colSpan={4} className="text-center text-red-500">
-                Error loading secrets: {secretsError.message || 'Unknown error'}
               </TableCell>
             </TableRow>
           ) : displaySecrets.length === 0 ? (

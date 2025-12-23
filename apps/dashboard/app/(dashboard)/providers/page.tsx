@@ -8,7 +8,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useProviders, useProviderHealth } from '@/lib/api/hooks'
 import { CheckCircleIcon, XCircleIcon } from '@heroicons/react/20/solid'
 
-
 function formatCurrency(value: number | undefined | null): string {
   if (value === undefined || value === null || isNaN(value)) return '$0.00'
   return new Intl.NumberFormat('en-US', {
@@ -51,8 +50,8 @@ function getProviderColor(provider: string): string {
 }
 
 export default function ProvidersPage() {
-  const { data: providersData, error: providersError, isLoading: isLoadingProviders } = useProviders()
-  const { data: healthData, error: healthError, isLoading: isLoadingHealth } = useProviderHealth()
+  const { data: providersData, error: providersError } = useProviders()
+  const { data: healthData, error: healthError } = useProviderHealth()
 
   // Extract providers array safely
   const displayProviders = Array.isArray(providersData?.providers)
@@ -62,7 +61,7 @@ export default function ProvidersPage() {
       : []
 
   const displayHealth = Array.isArray(healthData) ? healthData : []
-  const activeProvider = providersData?.active_provider
+  const activeProvider = providersData?.active_provider || null
 
   return (
     <>
@@ -91,29 +90,10 @@ export default function ProvidersPage() {
           </TableRow>
         </TableHead>
         <TableBody>
-          {isLoadingProviders ? (
-            <TableRow>
-              <TableCell colSpan={7} className="text-center text-zinc-500">
-                Loading providers...
-              </TableCell>
-            </TableRow>
-          ) : providersError ? (
-            <TableRow>
-              <TableCell colSpan={7} className="text-center text-red-500">
-                Error loading providers: {providersError.message || 'Unknown error'}
-              </TableCell>
-            </TableRow>
-          ) : displayProviders.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={7} className="text-center text-zinc-500">
-                No providers configured
-              </TableCell>
-            </TableRow>
-          ) : (
-            displayProviders.map((provider: any) => {
-              const isActive = provider.provider_type === activeProvider
+          {displayProviders.map((provider: any) => {
+            const isActive = provider.provider_type === activeProvider
 
-              return (
+            return (
               <TableRow key={provider.provider_type} href={`/providers/${provider.provider_type}`}>
                 <TableCell>
                   <div className="flex items-center gap-3">
@@ -150,24 +130,18 @@ export default function ProvidersPage() {
                   {formatRelativeTime(provider.last_used)}
                 </TableCell>
               </TableRow>
-              )
-            })
-          )}
+            )
+          })
+        )}
         </TableBody>
       </Table>
 
       <Subheading className="mt-14">Health Status</Subheading>
-      {isLoadingHealth ? (
-        <div className="mt-4 text-center text-zinc-500">Loading health status...</div>
-      ) : healthError ? (
-        <div className="mt-4 text-center text-red-500">
-          Error loading health status: {healthError.message || 'Unknown error'}
-        </div>
-      ) : displayHealth.length === 0 ? (
-        <div className="mt-4 text-center text-zinc-500">No health data available</div>
-      ) : (
-        <div className="mt-4 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {displayHealth.map((h: any) => (
+      <div className="mt-4 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {displayHealth.length === 0 ? (
+          <div className="col-span-full text-center text-zinc-500">No health data available</div>
+        ) : (
+          displayHealth.map((h: any) => (
           <div
             key={h.provider_type}
             className="rounded-xl border border-zinc-950/10 bg-white p-6 dark:border-white/10 dark:bg-zinc-900"
@@ -208,9 +182,9 @@ export default function ProvidersPage() {
               </div>
             </div>
           </div>
-        ))}
-        </div>
-      )}
+        ))
+        )}
+      </div>
 
       <div className="mt-10 rounded-xl border border-blue-200 bg-blue-50 p-6 dark:border-blue-900 dark:bg-blue-900/20">
         <h3 className="font-semibold text-blue-900 dark:text-blue-100">Provider Management</h3>
