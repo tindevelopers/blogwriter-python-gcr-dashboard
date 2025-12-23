@@ -81,6 +81,7 @@ export const api = {
     create: (data: any) => apiClient.post('/api/v1/admin/secrets', data),
     update: (name: string, data: any) => apiClient.put(`/api/v1/admin/secrets/${name}`, data),
     delete: (name: string) => apiClient.delete(`/api/v1/admin/secrets/${name}`),
+    sync: () => apiClient.post('/api/v1/admin/secrets/sync'),
   },
   
   // Environment Variables

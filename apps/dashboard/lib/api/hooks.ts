@@ -245,6 +245,22 @@ export function useDeleteSecret() {
   });
 }
 
+export function useSyncSecrets() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: () => api.secrets.sync(),
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.secrets });
+      const syncedCount = response.data?.synced_count || 0;
+      toast.success(`Successfully synced ${syncedCount} secret(s) from Google Secrets Manager`);
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to sync secrets: ${error.response?.data?.detail || error.message}`);
+    },
+  });
+}
+
 // Environment Variables
 export function useEnvVars() {
   return useQuery({

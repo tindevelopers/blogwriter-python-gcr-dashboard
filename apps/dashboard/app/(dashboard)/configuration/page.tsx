@@ -22,12 +22,13 @@ import {
   useCreateSecret,
   useUpdateSecret,
   useDeleteSecret,
+  useSyncSecrets,
   useEnvVars,
   useUpdateEnvVars,
   useClearCache,
   useStatus,
 } from '@/lib/api/hooks'
-import { TrashIcon, PencilIcon, PlusIcon } from '@heroicons/react/20/solid'
+import { TrashIcon, PencilIcon, PlusIcon, ArrowPathIcon } from '@heroicons/react/20/solid'
 
 function formatRelativeTime(dateString: string | null): string {
   if (!dateString) return 'Never'
@@ -51,6 +52,7 @@ export default function ConfigurationPage() {
   const createSecretMutation = useCreateSecret()
   const updateSecretMutation = useUpdateSecret()
   const deleteSecretMutation = useDeleteSecret()
+  const syncSecretsMutation = useSyncSecrets()
   const updateEnvVarsMutation = useUpdateEnvVars()
   const clearCacheMutation = useClearCache()
 
@@ -173,11 +175,26 @@ export default function ConfigurationPage() {
 
       {/* Secrets Management Section */}
       <div className="mt-8 flex items-end justify-between gap-4">
-        <Subheading>Secrets Management</Subheading>
-        <Button onClick={() => setIsCreateSecretOpen(true)}>
-          <PlusIcon className="h-4 w-4" />
-          Create Secret
-        </Button>
+        <div>
+          <Subheading>Secrets Management</Subheading>
+          <p className="mt-1 text-sm text-zinc-500">
+            Manage secrets synchronized with Google Secrets Manager
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button 
+            plain 
+            onClick={() => syncSecretsMutation.mutate()} 
+            disabled={syncSecretsMutation.isPending}
+          >
+            <ArrowPathIcon className={`h-4 w-4 ${syncSecretsMutation.isPending ? 'animate-spin' : ''}`} />
+            {syncSecretsMutation.isPending ? 'Syncing...' : 'Sync from GCP'}
+          </Button>
+          <Button onClick={() => setIsCreateSecretOpen(true)}>
+            <PlusIcon className="h-4 w-4" />
+            Create Secret
+          </Button>
+        </div>
       </div>
 
       <Table className="mt-4 [--gutter:--spacing(6)] lg:[--gutter:--spacing(10)]">
@@ -185,6 +202,7 @@ export default function ConfigurationPage() {
           <TableRow>
             <TableHeader>Name</TableHeader>
             <TableHeader>Type</TableHeader>
+            <TableHeader>Status</TableHeader>
             <TableHeader>Last Updated</TableHeader>
             <TableHeader className="text-right">Actions</TableHeader>
           </TableRow>
@@ -192,14 +210,14 @@ export default function ConfigurationPage() {
         <TableBody>
           {isLoadingSecrets ? (
             <TableRow>
-              <TableCell colSpan={4} className="text-center text-zinc-500">
+              <TableCell colSpan={5} className="text-center text-zinc-500">
                 Loading secrets...
               </TableCell>
             </TableRow>
           ) : displaySecrets.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={4} className="text-center text-zinc-500">
-                No secrets found
+              <TableCell colSpan={5} className="text-center text-zinc-500">
+                No secrets found. Click &quot;Sync from GCP&quot; to load secrets from Google Secrets Manager.
               </TableCell>
             </TableRow>
           ) : (
@@ -208,6 +226,9 @@ export default function ConfigurationPage() {
                 <TableCell className="font-medium font-mono">{secret.name}</TableCell>
                 <TableCell>
                   <Badge color="zinc">{secret.type || 'unknown'}</Badge>
+                </TableCell>
+                <TableCell>
+                  <Badge color="green">Synced</Badge>
                 </TableCell>
                 <TableCell className="text-zinc-500">
                   {formatRelativeTime(secret.last_updated)}
@@ -302,7 +323,9 @@ export default function ConfigurationPage() {
       {/* Create Secret Dialog */}
       <Dialog open={isCreateSecretOpen} onClose={() => setIsCreateSecretOpen(false)}>
         <DialogTitle>Create Secret</DialogTitle>
-        <DialogDescription>Add a new secret to the system</DialogDescription>
+        <DialogDescription>
+          Add a new secret to the system. This will be synchronized to Google Secrets Manager.
+        </DialogDescription>
         <form onSubmit={handleCreateSecret}>
           <DialogBody>
             <Fieldset>
@@ -358,7 +381,9 @@ export default function ConfigurationPage() {
       {/* Edit Secret Dialog */}
       <Dialog open={isEditSecretOpen} onClose={() => setIsEditSecretOpen(false)}>
         <DialogTitle>Edit Secret</DialogTitle>
-        <DialogDescription>Update secret: {selectedSecret?.name}</DialogDescription>
+        <DialogDescription>
+          Update secret: {selectedSecret?.name}. Changes will be synchronized to Google Secrets Manager.
+        </DialogDescription>
         <form onSubmit={handleUpdateSecret}>
           <DialogBody>
             <Fieldset>

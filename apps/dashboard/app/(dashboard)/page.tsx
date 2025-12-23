@@ -6,7 +6,7 @@ import { Badge } from '@repo/ui/badge'
 import { Heading, Subheading } from '@repo/ui/heading'
 import { Select } from '@repo/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@repo/ui/table'
-import { useProviderStats, useCosts } from '@/lib/api/hooks'
+import { useProviderStats, useCosts, useJobs } from '@/lib/api/hooks'
 
 function formatCurrency(value: number | undefined | null): string {
   if (value === undefined || value === null || isNaN(value)) return '$0.00'
@@ -24,6 +24,7 @@ function formatNumber(value: number | undefined | null): string {
 export default function DashboardPage() {
   const { data: providerStats, error: statsError, isLoading } = useProviderStats()
   const { data: costs } = useCosts()
+  const { data: jobsData } = useJobs({ limit: 10 })
 
   // Use real API data only
   const displayProviderStats = Array.isArray(providerStats)
@@ -48,6 +49,13 @@ export default function DashboardPage() {
             displayProviderStats.length
         )
       : 0
+
+  // Get recent jobs/requests
+  const recentRequests = Array.isArray(jobsData?.jobs)
+    ? jobsData.jobs.slice(0, 10)
+    : Array.isArray(jobsData)
+      ? jobsData.slice(0, 10)
+      : []
 
   return (
     <>
@@ -126,8 +134,7 @@ export default function DashboardPage() {
                 {provider.success_rate > 0 ? `${provider.success_rate}%` : '—'}
               </TableCell>
             </TableRow>
-          ))
-          )}
+          ))}
         </TableBody>
       </Table>
 
@@ -145,21 +152,51 @@ export default function DashboardPage() {
           </TableRow>
         </TableHead>
         <TableBody>
-          {mockRecentRequests.map((request) => (
-            <TableRow key={request.id}>
-              <TableCell className="font-medium">{request.id}</TableCell>
-              <TableCell className="text-zinc-500">{request.timestamp}</TableCell>
-              <TableCell className="capitalize">{request.provider}</TableCell>
-              <TableCell className="text-zinc-500">{request.model}</TableCell>
-              <TableCell className="text-right tabular-nums">
-                {formatNumber(request.tokens)}
-              </TableCell>
-              <TableCell className="text-right tabular-nums">{request.cost}</TableCell>
-              <TableCell className="text-right">
-                <Badge color="lime">{request.status}</Badge>
+          {recentRequests.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={7} className="text-center text-zinc-500">
+                No recent requests
               </TableCell>
             </TableRow>
-          ))}
+          ) : (
+            recentRequests.map((request: any) => (
+              <TableRow key={request.job_id || request.id}>
+                <TableCell className="font-medium font-mono">
+                  {request.job_id || request.id || 'N/A'}
+                </TableCell>
+                <TableCell className="text-zinc-500">
+                  {request.created_at
+                    ? new Date(request.created_at).toLocaleString()
+                    : request.timestamp || 'N/A'}
+                </TableCell>
+                <TableCell className="capitalize">
+                  {request.provider_type || request.provider || 'N/A'}
+                </TableCell>
+                <TableCell className="text-zinc-500">
+                  {request.model || 'N/A'}
+                </TableCell>
+                <TableCell className="text-right tabular-nums">
+                  {request.tokens ? formatNumber(request.tokens) : '—'}
+                </TableCell>
+                <TableCell className="text-right tabular-nums">
+                  {request.cost ? formatCurrency(request.cost) : '—'}
+                </TableCell>
+                <TableCell className="text-right">
+                  <Badge
+                    color={
+                      request.status === 'completed' || request.status === 'success'
+                        ? 'lime'
+                        : request.status === 'failed' || request.status === 'error'
+                          ? 'red'
+                          : 'zinc'
+                    }
+                  >
+                    {request.status || 'pending'}
+                  </Badge>
+                </TableCell>
+              </TableRow>
+            ))
+          )}
         </TableBody>
       </Table>
     </>

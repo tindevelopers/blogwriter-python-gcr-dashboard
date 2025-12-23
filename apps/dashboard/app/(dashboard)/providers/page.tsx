@@ -131,8 +131,7 @@ export default function ProvidersPage() {
                 </TableCell>
               </TableRow>
             )
-          })
-        )}
+          })}
         </TableBody>
       </Table>
 
