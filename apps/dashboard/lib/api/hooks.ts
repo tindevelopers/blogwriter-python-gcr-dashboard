@@ -200,11 +200,71 @@ export function useSecrets() {
   });
 }
 
+export function useCreateSecret() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (data: any) => api.secrets.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.secrets });
+      toast.success('Secret created successfully');
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to create secret: ${error.response?.data?.detail || error.message}`);
+    },
+  });
+}
+
+export function useUpdateSecret() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ name, data }: { name: string; data: any }) => api.secrets.update(name, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.secrets });
+      toast.success('Secret updated successfully');
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to update secret: ${error.response?.data?.detail || error.message}`);
+    },
+  });
+}
+
+export function useDeleteSecret() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (name: string) => api.secrets.delete(name),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.secrets });
+      toast.success('Secret deleted successfully');
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to delete secret: ${error.response?.data?.detail || error.message}`);
+    },
+  });
+}
+
 // Environment Variables
 export function useEnvVars() {
   return useQuery({
     queryKey: queryKeys.envVars,
     queryFn: async () => (await api.envVars.get()).data,
+  });
+}
+
+export function useUpdateEnvVars() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (data: any) => api.envVars.update(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.envVars });
+      toast.success('Environment variables updated successfully');
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to update environment variables: ${error.response?.data?.detail || error.message}`);
+    },
   });
 }
 

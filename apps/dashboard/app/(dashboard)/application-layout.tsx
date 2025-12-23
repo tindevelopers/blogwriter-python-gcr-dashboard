@@ -39,6 +39,7 @@ import {
   SparklesIcon,
 } from '@heroicons/react/20/solid'
 import { usePathname } from 'next/navigation'
+import { useProviderStats, useUsage } from '@/lib/api/hooks'
 
 function AccountDropdownMenu({ anchor }: { anchor: 'top start' | 'bottom end' }) {
   return (
@@ -67,6 +68,23 @@ function AccountDropdownMenu({ anchor }: { anchor: 'top start' | 'bottom end' })
 
 export function ApplicationLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
+  const { data: providerStats } = useProviderStats()
+  const { data: usageData } = useUsage()
+
+  // Calculate active providers count
+  const activeProviders = Array.isArray(providerStats)
+    ? providerStats.filter((p: any) => p.enabled).length
+    : Array.isArray(providerStats?.providers)
+      ? providerStats.providers.filter((p: any) => p.enabled).length
+      : 2
+
+  // Calculate total requests (today or from usage data)
+  const totalRequests = usageData?.total_requests_today ||
+    (Array.isArray(providerStats)
+      ? providerStats.reduce((sum: number, p: any) => sum + (p.total_requests || 0), 0)
+      : Array.isArray(providerStats?.providers)
+        ? providerStats.providers.reduce((sum: number, p: any) => sum + (p.total_requests || 0), 0)
+        : 2140)
 
   return (
     <SidebarLayout
@@ -114,16 +132,16 @@ export function ApplicationLayout({ children }: { children: React.ReactNode }) {
 
             <SidebarSection className="max-lg:hidden">
               <SidebarHeading>Quick Stats</SidebarHeading>
-              <SidebarItem href="#">
+              <SidebarItem href="/providers">
                 <span className="flex items-center gap-3">
                   <span className="h-2 w-2 rounded-full bg-green-500" />
-                  <span>2 Active Providers</span>
+                  <span>{activeProviders} Active Provider{activeProviders !== 1 ? 's' : ''}</span>
                 </span>
               </SidebarItem>
-              <SidebarItem href="#">
+              <SidebarItem href="/monitoring">
                 <span className="flex items-center gap-3">
                   <span className="h-2 w-2 rounded-full bg-blue-500" />
-                  <span>2,140 Requests Today</span>
+                  <span>{totalRequests.toLocaleString()} Requests Today</span>
                 </span>
               </SidebarItem>
             </SidebarSection>
@@ -131,11 +149,11 @@ export function ApplicationLayout({ children }: { children: React.ReactNode }) {
             <SidebarSpacer />
 
             <SidebarSection>
-              <SidebarItem href="#">
+              <SidebarItem href="/support" current={pathname.startsWith('/support')}>
                 <QuestionMarkCircleIcon />
                 <SidebarLabel>Support</SidebarLabel>
               </SidebarItem>
-              <SidebarItem href="#">
+              <SidebarItem href="/changelog" current={pathname.startsWith('/changelog')}>
                 <SparklesIcon />
                 <SidebarLabel>Changelog</SidebarLabel>
               </SidebarItem>

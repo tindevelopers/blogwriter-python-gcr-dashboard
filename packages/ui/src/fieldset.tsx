@@ -64,6 +64,9 @@ export function Label({ className, ...props }: { className?: string } & Omit<Hea
   )
 }
 
+// Alias for Label for consistency with Field naming
+export const FieldLabel = Label
+
 export function Description({
   className,
   ...props
