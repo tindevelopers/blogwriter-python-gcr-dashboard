@@ -31,63 +31,6 @@ import {
   XMarkIcon,
 } from '@heroicons/react/20/solid'
 
-// Mock data for demo mode
-const mockJobs = [
-  {
-    id: 'job-001',
-    type: 'blog_generation',
-    status: 'running',
-    created_at: new Date(Date.now() - 300000).toISOString(),
-    updated_at: new Date(Date.now() - 60000).toISOString(),
-    progress: 65,
-  },
-  {
-    id: 'job-002',
-    type: 'blog_generation',
-    status: 'completed',
-    created_at: new Date(Date.now() - 1800000).toISOString(),
-    updated_at: new Date(Date.now() - 1200000).toISOString(),
-    progress: 100,
-  },
-  {
-    id: 'job-003',
-    type: 'blog_generation',
-    status: 'failed',
-    created_at: new Date(Date.now() - 3600000).toISOString(),
-    updated_at: new Date(Date.now() - 3300000).toISOString(),
-    progress: 0,
-    error: 'API rate limit exceeded',
-  },
-  {
-    id: 'job-004',
-    type: 'blog_generation',
-    status: 'pending',
-    created_at: new Date(Date.now() - 60000).toISOString(),
-    updated_at: new Date(Date.now() - 60000).toISOString(),
-    progress: 0,
-  },
-]
-
-const mockLogs = [
-  { timestamp: new Date().toISOString(), level: 'info', message: 'Blog generation job started' },
-  { timestamp: new Date(Date.now() - 60000).toISOString(), level: 'warning', message: 'Rate limit approaching' },
-  { timestamp: new Date(Date.now() - 120000).toISOString(), level: 'error', message: 'API request failed' },
-  { timestamp: new Date(Date.now() - 180000).toISOString(), level: 'info', message: 'Cache hit for request' },
-]
-
-const mockStatus = {
-  api_health: 'healthy',
-  active_jobs: 2,
-  cache_status: 'operational',
-  uptime_seconds: 86400,
-}
-
-const mockCacheStats = {
-  hits: 1245,
-  misses: 234,
-  hit_rate: 84.2,
-  size_mb: 45.6,
-}
 
 function formatRelativeTime(dateString: string | null): string {
   if (!dateString) return 'Never'
@@ -156,12 +99,11 @@ export default function MonitoringPage() {
   const [logSearch, setLogSearch] = useState<string>('')
   const [autoRefresh, setAutoRefresh] = useState<boolean>(true)
 
-  const isDemo = !!jobsError || !!logsError || !!statusError
-
-  const displayJobs = Array.isArray(jobsData?.jobs) ? jobsData.jobs : Array.isArray(jobsData) ? jobsData : mockJobs
-  const displayLogs = Array.isArray(logsData?.logs) ? logsData.logs : Array.isArray(logsData) ? logsData : mockLogs
-  const displayStatus = statusData || mockStatus
-  const displayCacheStats = cacheStatsData || mockCacheStats
+  // Extract real data from API responses
+  const displayJobs = Array.isArray(jobsData?.jobs) ? jobsData.jobs : Array.isArray(jobsData) ? jobsData : []
+  const displayLogs = Array.isArray(logsData?.logs) ? logsData.logs : Array.isArray(logsData) ? logsData : []
+  const displayStatus = statusData || {}
+  const displayCacheStats = cacheStatsData || {}
 
   const filteredLogs = displayLogs.filter((log: any) => {
     if (logLevel !== 'all' && log.level !== logLevel) return false
@@ -170,28 +112,16 @@ export default function MonitoringPage() {
   })
 
   const handleCancelJob = async (jobId: string) => {
-    if (isDemo) {
-      alert('Job cancellation simulated in demo mode')
-      return
-    }
     if (confirm(`Are you sure you want to cancel job ${jobId}?`)) {
       await cancelJobMutation.mutateAsync(jobId)
     }
   }
 
   const handleRetryJob = async (jobId: string) => {
-    if (isDemo) {
-      alert('Job retry simulated in demo mode')
-      return
-    }
     await retryJobMutation.mutateAsync(jobId)
   }
 
   const handleClearCache = async () => {
-    if (isDemo) {
-      alert('Cache clear simulated in demo mode')
-      return
-    }
     if (confirm('Are you sure you want to clear the cache? This action cannot be undone.')) {
       await clearCacheMutation.mutateAsync()
     }
@@ -201,9 +131,9 @@ export default function MonitoringPage() {
     <>
       <Heading>Monitoring</Heading>
 
-      {isDemo && (
-        <div className="mt-4 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
-          <strong>Demo Mode</strong> — Showing sample data. Connect your backend API for live monitoring.
+      {(statusError || jobsError || logsError || cacheStatsError) && (
+        <div className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-800 dark:bg-red-900/20 dark:text-red-200">
+          <strong>Error</strong> — Unable to load monitoring data. Please check your API connection.
         </div>
       )}
 
@@ -279,6 +209,12 @@ export default function MonitoringPage() {
             <TableRow>
               <TableCell colSpan={6} className="text-center text-zinc-500">
                 Loading jobs...
+              </TableCell>
+            </TableRow>
+          ) : jobsError ? (
+            <TableRow>
+              <TableCell colSpan={6} className="text-center text-red-500">
+                Error loading jobs: {jobsError.message || 'Unknown error'}
               </TableCell>
             </TableRow>
           ) : displayJobs.length === 0 ? (
@@ -357,6 +293,8 @@ export default function MonitoringPage() {
         <div className="max-h-96 overflow-y-auto font-mono text-sm">
           {isLoadingLogs ? (
             <div className="text-zinc-500">Loading logs...</div>
+          ) : logsError ? (
+            <div className="text-red-500">Error loading logs: {logsError.message || 'Unknown error'}</div>
           ) : filteredLogs.length === 0 ? (
             <div className="text-zinc-500">No logs found</div>
           ) : (

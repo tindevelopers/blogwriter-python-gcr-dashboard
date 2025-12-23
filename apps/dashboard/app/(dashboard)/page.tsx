@@ -6,83 +6,8 @@ import { Badge } from '@repo/ui/badge'
 import { Heading, Subheading } from '@repo/ui/heading'
 import { Select } from '@repo/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@repo/ui/table'
-import { useProviderStats, useCosts } from '@/lib/api/hooks'
+import { useProviderStats, useCosts, useUsage } from '@/lib/api/hooks'
 
-// Mock data for demo mode
-const mockProviderStats = [
-  {
-    provider_type: 'openai',
-    enabled: true,
-    total_requests: 1248,
-    total_cost: 45.67,
-    avg_latency: 245,
-    success_rate: 99.2,
-  },
-  {
-    provider_type: 'anthropic',
-    enabled: true,
-    total_requests: 892,
-    total_cost: 32.45,
-    avg_latency: 312,
-    success_rate: 98.8,
-  },
-  {
-    provider_type: 'google',
-    enabled: false,
-    total_requests: 0,
-    total_cost: 0,
-    avg_latency: 0,
-    success_rate: 0,
-  },
-]
-
-const mockRecentRequests = [
-  {
-    id: 'req-001',
-    timestamp: '2 min ago',
-    provider: 'openai',
-    model: 'gpt-4-turbo',
-    tokens: 2450,
-    cost: '$0.12',
-    status: 'success',
-  },
-  {
-    id: 'req-002',
-    timestamp: '5 min ago',
-    provider: 'anthropic',
-    model: 'claude-3-sonnet',
-    tokens: 1890,
-    cost: '$0.08',
-    status: 'success',
-  },
-  {
-    id: 'req-003',
-    timestamp: '8 min ago',
-    provider: 'openai',
-    model: 'gpt-4-turbo',
-    tokens: 3200,
-    cost: '$0.15',
-    status: 'success',
-  },
-  {
-    id: 'req-004',
-    timestamp: '12 min ago',
-    provider: 'anthropic',
-    model: 'claude-3-sonnet',
-    tokens: 1250,
-    cost: '$0.05',
-    status: 'success',
-  },
-  {
-    id: 'req-005',
-    timestamp: '15 min ago',
-    provider: 'openai',
-    model: 'gpt-4-turbo',
-    tokens: 980,
-    cost: '$0.04',
-    status: 'success',
-  },
-]
 
 function formatCurrency(value: number | undefined | null): string {
   if (value === undefined || value === null || isNaN(value)) return '$0.00'
@@ -98,30 +23,36 @@ function formatNumber(value: number | undefined | null): string {
 }
 
 export default function DashboardPage() {
-  const { data: providerStats, error: statsError, isLoading } = useProviderStats()
-  const { data: costs } = useCosts()
+  const { data: providerStats, error: statsError, isLoading: isLoadingStats } = useProviderStats()
+  const { data: costs, error: costsError } = useCosts()
+  const { data: usageData, error: usageError } = useUsage()
 
-  // Always use mock data for now until API is connected
-  const displayProviderStats = Array.isArray(providerStats) ? providerStats : mockProviderStats
-  const isDemo = !providerStats || !!statsError
+  // Extract real data from API responses
+  const displayProviderStats = Array.isArray(providerStats) ? providerStats : []
 
-  // Calculate metrics
+  // Calculate metrics from real data
   const totalRequests = displayProviderStats.reduce(
     (sum: number, p: any) => sum + (p.total_requests || 0),
     0
   )
-  const totalCost = costs?.total_cost || 78.12
+  const totalCost = costs?.total_cost || 0
   const activeProviders = displayProviderStats.filter((p: any) => p.enabled).length
-  const avgLatency = 278
+  
+  // Calculate average latency from provider stats
+  const avgLatency = displayProviderStats.length > 0
+    ? Math.round(
+        displayProviderStats.reduce((sum: number, p: any) => sum + (p.avg_latency || 0), 0) /
+        displayProviderStats.filter((p: any) => p.avg_latency > 0).length || 1
+      )
+    : 0
 
   return (
     <>
       <Heading>Dashboard</Heading>
 
-      {isDemo && (
-        <div className="mt-4 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
-          <strong>Demo Mode</strong> — Showing sample data. Connect your backend API for live
-          metrics.
+      {(statsError || costsError || usageError) && (
+        <div className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-800 dark:bg-red-900/20 dark:text-red-200">
+          <strong>Error</strong> — Unable to load dashboard data. Please check your API connection.
         </div>
       )}
 
@@ -138,10 +69,10 @@ export default function DashboardPage() {
       </div>
 
       <div className="mt-4 grid gap-8 sm:grid-cols-2 xl:grid-cols-4">
-        <Stat title="Total Requests" value={formatNumber(totalRequests)} change="+12.5%" />
-        <Stat title="Total Cost" value={formatCurrency(totalCost)} change="-2.3%" />
-        <Stat title="Active Providers" value={`${activeProviders}/3`} change="+1" />
-        <Stat title="Avg. Latency" value={`${avgLatency}ms`} change="-15ms" />
+        <Stat title="Total Requests" value={formatNumber(totalRequests)} change="—" />
+        <Stat title="Total Cost" value={formatCurrency(totalCost)} change="—" />
+        <Stat title="Active Providers" value={`${activeProviders}`} change="—" />
+        <Stat title="Avg. Latency" value={avgLatency > 0 ? `${avgLatency}ms` : '—'} change="—" />
       </div>
 
       <Subheading className="mt-14">Provider Performance</Subheading>
@@ -157,7 +88,26 @@ export default function DashboardPage() {
           </TableRow>
         </TableHead>
         <TableBody>
-          {displayProviderStats.map((provider: any) => (
+          {isLoadingStats ? (
+            <TableRow>
+              <TableCell colSpan={6} className="text-center text-zinc-500">
+                Loading provider statistics...
+              </TableCell>
+            </TableRow>
+          ) : statsError ? (
+            <TableRow>
+              <TableCell colSpan={6} className="text-center text-red-500">
+                Error loading provider statistics: {statsError.message || 'Unknown error'}
+              </TableCell>
+            </TableRow>
+          ) : displayProviderStats.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={6} className="text-center text-zinc-500">
+                No provider statistics available
+              </TableCell>
+            </TableRow>
+          ) : (
+            displayProviderStats.map((provider: any) => (
             <TableRow key={provider.provider_type} href={`/providers/${provider.provider_type}`}>
               <TableCell>
                 <div className="flex items-center gap-3">
@@ -192,39 +142,8 @@ export default function DashboardPage() {
                 {provider.success_rate > 0 ? `${provider.success_rate}%` : '—'}
               </TableCell>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-
-      <Subheading className="mt-14">Recent Requests</Subheading>
-      <Table className="mt-4 [--gutter:--spacing(6)] lg:[--gutter:--spacing(10)]">
-        <TableHead>
-          <TableRow>
-            <TableHeader>Request ID</TableHeader>
-            <TableHeader>Time</TableHeader>
-            <TableHeader>Provider</TableHeader>
-            <TableHeader>Model</TableHeader>
-            <TableHeader className="text-right">Tokens</TableHeader>
-            <TableHeader className="text-right">Cost</TableHeader>
-            <TableHeader className="text-right">Status</TableHeader>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {mockRecentRequests.map((request) => (
-            <TableRow key={request.id}>
-              <TableCell className="font-medium">{request.id}</TableCell>
-              <TableCell className="text-zinc-500">{request.timestamp}</TableCell>
-              <TableCell className="capitalize">{request.provider}</TableCell>
-              <TableCell className="text-zinc-500">{request.model}</TableCell>
-              <TableCell className="text-right tabular-nums">
-                {formatNumber(request.tokens)}
-              </TableCell>
-              <TableCell className="text-right tabular-nums">{request.cost}</TableCell>
-              <TableCell className="text-right">
-                <Badge color="lime">{request.status}</Badge>
-              </TableCell>
-            </TableRow>
-          ))}
+            ))
+          )}
         </TableBody>
       </Table>
     </>

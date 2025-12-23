@@ -29,31 +29,6 @@ import {
 } from '@/lib/api/hooks'
 import { TrashIcon, PencilIcon, PlusIcon } from '@heroicons/react/20/solid'
 
-// Mock data for demo mode
-const mockSecrets = [
-  {
-    name: 'OPENAI_API_KEY',
-    type: 'api_key',
-    last_updated: new Date(Date.now() - 86400000).toISOString(),
-  },
-  {
-    name: 'ANTHROPIC_API_KEY',
-    type: 'api_key',
-    last_updated: new Date(Date.now() - 172800000).toISOString(),
-  },
-  {
-    name: 'DATABASE_URL',
-    type: 'connection_string',
-    last_updated: new Date(Date.now() - 3600000).toISOString(),
-  },
-]
-
-const mockEnvVars = {
-  NODE_ENV: 'production',
-  API_URL: 'https://api.example.com',
-  LOG_LEVEL: 'info',
-  MAX_RETRIES: '3',
-}
 
 function formatRelativeTime(dateString: string | null): string {
   if (!dateString) return 'Never'
@@ -90,15 +65,13 @@ export default function ConfigurationPage() {
   const [newEnvVarKey, setNewEnvVarKey] = useState('')
   const [newEnvVarValue, setNewEnvVarValue] = useState('')
 
-  const isDemo = !!secretsError || !!envVarsError
-
   const displaySecrets = Array.isArray(secretsData?.secrets)
     ? secretsData.secrets
     : Array.isArray(secretsData)
       ? secretsData
-      : mockSecrets
+      : []
 
-  const displayEnvVars = envVarsData || mockEnvVars
+  const displayEnvVars = envVarsData || {}
 
   // Initialize env vars state when data loads
   useEffect(() => {
@@ -109,12 +82,6 @@ export default function ConfigurationPage() {
 
   const handleCreateSecret = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (isDemo) {
-      alert('Secret creation simulated in demo mode')
-      setIsCreateSecretOpen(false)
-      setSecretForm({ name: '', value: '', type: 'api_key' })
-      return
-    }
     try {
       await createSecretMutation.mutateAsync({
         name: secretForm.name,
@@ -130,13 +97,6 @@ export default function ConfigurationPage() {
 
   const handleUpdateSecret = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (isDemo) {
-      alert('Secret update simulated in demo mode')
-      setIsEditSecretOpen(false)
-      setSelectedSecret(null)
-      setSecretForm({ name: '', value: '', type: 'api_key' })
-      return
-    }
     try {
       await updateSecretMutation.mutateAsync({
         name: selectedSecret.name,
@@ -154,12 +114,6 @@ export default function ConfigurationPage() {
   }
 
   const handleDeleteSecret = async () => {
-    if (isDemo) {
-      alert('Secret deletion simulated in demo mode')
-      setIsDeleteSecretOpen(false)
-      setSelectedSecret(null)
-      return
-    }
     try {
       await deleteSecretMutation.mutateAsync(selectedSecret.name)
       setIsDeleteSecretOpen(false)
@@ -184,10 +138,6 @@ export default function ConfigurationPage() {
   }
 
   const handleSaveEnvVars = async () => {
-    if (isDemo) {
-      alert('Environment variables update simulated in demo mode')
-      return
-    }
     try {
       await updateEnvVarsMutation.mutateAsync(envVars)
     } catch (error) {
@@ -196,10 +146,6 @@ export default function ConfigurationPage() {
   }
 
   const handleClearCache = async () => {
-    if (isDemo) {
-      alert('Cache clear simulated in demo mode')
-      return
-    }
     if (confirm('Are you sure you want to clear the cache? This action cannot be undone.')) {
       await clearCacheMutation.mutateAsync()
     }
@@ -220,10 +166,9 @@ export default function ConfigurationPage() {
     <>
       <Heading>Configuration</Heading>
 
-      {isDemo && (
-        <div className="mt-4 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
-          <strong>Demo Mode</strong> — Showing sample data. Connect your backend API for live configuration
-          management.
+      {(secretsError || envVarsError) && (
+        <div className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-800 dark:bg-red-900/20 dark:text-red-200">
+          <strong>Error</strong> — Unable to load configuration data. Please check your API connection.
         </div>
       )}
 
@@ -250,6 +195,12 @@ export default function ConfigurationPage() {
             <TableRow>
               <TableCell colSpan={4} className="text-center text-zinc-500">
                 Loading secrets...
+              </TableCell>
+            </TableRow>
+          ) : secretsError ? (
+            <TableRow>
+              <TableCell colSpan={4} className="text-center text-red-500">
+                Error loading secrets: {secretsError.message || 'Unknown error'}
               </TableCell>
             </TableRow>
           ) : displaySecrets.length === 0 ? (

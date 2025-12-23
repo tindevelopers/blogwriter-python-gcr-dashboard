@@ -71,20 +71,21 @@ export function ApplicationLayout({ children }: { children: React.ReactNode }) {
   const { data: providerStats } = useProviderStats()
   const { data: usageData } = useUsage()
 
-  // Calculate active providers count
+  // Calculate active providers count from real data
   const activeProviders = Array.isArray(providerStats)
     ? providerStats.filter((p: any) => p.enabled).length
     : Array.isArray(providerStats?.providers)
       ? providerStats.providers.filter((p: any) => p.enabled).length
-      : 2
+      : 0
 
-  // Calculate total requests (today or from usage data)
+  // Calculate total requests from real data
   const totalRequests = usageData?.total_requests_today ||
+    usageData?.requests_today ||
     (Array.isArray(providerStats)
       ? providerStats.reduce((sum: number, p: any) => sum + (p.total_requests || 0), 0)
       : Array.isArray(providerStats?.providers)
         ? providerStats.providers.reduce((sum: number, p: any) => sum + (p.total_requests || 0), 0)
-        : 2140)
+        : 0)
 
   return (
     <SidebarLayout
